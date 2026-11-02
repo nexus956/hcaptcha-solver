@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hCaptcha Tester</title>
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: #0d0f14;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, -apple-system, sans-serif;
+    padding: 20px;
+  }
+
+  .card {
+    background: #151820;
+    border: 1px solid #252836;
+    border-radius: 14px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 460px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e8eaf0;
+    margin-bottom: 6px;
+  }
+
+  .header p {
+    font-size: 13px;
+    color: #6b7080;
+  }
+
+  .widget-box {
+    background: #1c1f2e;
+    border: 1px dashed #2e3147;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    min-height: 80px;
+    align-items: center;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 11px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+    margin-bottom: 10px;
+  }
+
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-verify { background: #5c5aff; color: #fff; }
+  .btn-verify:hover:not(:disabled) { opacity: 0.88; }
+  .btn-reset { background: #1c1f2e; color: #8b8fa8; border: 1px solid #252836; }
+  .btn-reset:hover:not(:disabled) { background: #252836; color: #e8eaf0; }
+
+  .output {
+    display: none;
+    margin-top: 4px;
+  }
+
+  .output.show { display: block; }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+
+  .status-bar.pass { background: #0f2d1a; color: #4ade80; }
+  .status-bar.fail { background: #2d0f0f; color: #f87171; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  .elapsed { margin-left: auto; font-size: 11px; opacity: 0.7; font-family: monospace; }
+
+  .json-block {
+    background: #1c1f2e;
+    border: 1px solid #252836;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'JetBrains Mono', 'Fira Mono', monospace;
+    font-size: 12px;
+    color: #a8a4ff;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+
+  .field-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 14px;
+  }
+
+  .field-row label {
+    font-size: 11px;
+    color: #6b7080;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .field-row input {
+    background: #1c1f2e;
+    border: 1px solid #252836;
+    border-radius: 7px;
+    padding: 9px 12px;
+    color: #e8eaf0;
+    font-size: 12px;
+    font-family: monospace;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .field-row input:focus { border-color: #5c5aff; }
+
+  .divider { border: none; border-top: 1px solid #252836; margin: 18px 0; }
+
+  .hint {
+    font-size: 12px;
+    color: #6b7080;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #ffffff22;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <h1>hCaptcha Tester</h1>
+    <p>Solve the widget, verify the token, see the raw response</p>
+  </div>
+
+  <!-- Credentials -->
+  <div class="field-row">
+    <label>Site key</label>
+    <input id="sitekey" value="10000000-ffff-ffff-ffff-000000000001">
+  </div>
+  <div class="field-row">
+    <label>Secret key</label>
+    <input id="secret" value="0x0000000000000000000000000000000000000000">
+  </div>
+
+  <hr class="divider">
+
+  <!-- Widget -->
+  <div class="widget-box">
+    <div id="hcaptcha-box"></div>
+  </div>
+
+  <p class="hint" id="hint">Complete the captcha above, then click Verify</p>
+
+  <button class="btn btn-verify" id="btn-verify" disabled onclick="doVerify()">Verify token</button>
+  <button class="btn btn-reset" onclick="doReset()">Reset</button>
+
+  <!-- Output -->
+  <div class="output" id="output">
+    <div class="status-bar" id="status-bar">
+      <div class="dot"></div>
+      <span id="status-text"></span>
+      <span class="elapsed" id="elapsed-text"></span>
+    </div>
+    <div class="json-block" id="json-out"></div>
+  </div>
+</div>
+
+<script>
+let widgetId = null;
+let token = '';
+
+function initWidget() {
+  const box = document.getElementById('hcaptcha-box');
+  box.innerHTML = '';
+  if (typeof hcaptcha === 'undefined') {
+    box.innerHTML = '<span style="color:#6b7080;font-size:12px;">Loading…</span>';
+    setTimeout(initWidget, 600);
+    return;
+  }
+  const sk = document.getElementById('sitekey').value.trim() || '10000000-ffff-ffff-ffff-000000000001';
+  try {
+    widgetId = hcaptcha.render('hcaptcha-box', {
+      sitekey: sk,
+      theme: 'dark',
+      callback: onSuccess,
+      'expired-callback': onExpired,
+      'error-callback': onError
+    });
+  } catch(e) {
+    box.innerHTML = '<span style="color:#f87171;font-size:12px;">Widget error: ' + e.message + '</span>';
+  }
+}
+
+function onSuccess(t) {
+  token = t;
+  document.getElementById('btn-verify').disabled = false;
+  document.getElementById('hint').textContent = 'Token ready — click Verify';
+  document.getElementById('hint').style.color = '#4ade80';
+}
+
+function onExpired() {
+  token = '';
+  document.getElementById('btn-verify').disabled = true;
+  document.getElementById('hint').textContent = 'Token expired — solve again';
+  document.getElementById('hint').style.color = '#f59e0b';
+  document.getElementById('output').classList.remove('show');
+}
+
+function onError(e) {
+  document.getElementById('hint').textContent = 'Widget error: ' + (e || 'unknown');
+  document.getElementById('hint').style.color = '#f87171';
+}
+
+async function doVerify() {
+  if (!token) return;
+
+  const secret = document.getElementById('secret').value.trim();
+  const sitekey = document.getElementById('sitekey').value.trim();
+
+  document.getElementById('btn-verify').innerHTML = '<span class="spinner"></span>Verifying…';
+  document.getElementById('btn-verify').disabled = true;
+
+  const t0 = performance.now();
+
+  let data = {};
+  let networkError = null;
+
+  try {
+    const resp = await fetch('https://api.hcaptcha.com/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ secret, response: token, sitekey }).toString()
+    });
+    data = await resp.json();
+  } catch(e) {
+    networkError = e.message;
+  }
+
+  const elapsed = Math.round(performance.now() - t0);
+
+  const output = document.getElementById('output');
+  const bar = document.getElementById('status-bar');
+  const statusText = document.getElementById('status-text');
+  const elapsedText = document.getElementById('elapsed-text');
+  const jsonOut = document.getElementById('json-out');
+
+  output.classList.add('show');
+
+  if (networkError) {
+    bar.className = 'status-bar fail';
+    statusText.textContent = 'Network error: ' + networkError;
+    elapsedText.textContent = elapsed + 'ms';
+    jsonOut.textContent = JSON.stringify({ error: networkError }, null, 2);
+  } else {
+    const pass = !!data.success;
+    bar.className = 'status-bar ' + (pass ? 'pass' : 'fail');
+    statusText.textContent = pass ? 'Verification passed' : 'Verification failed';
+    elapsedText.textContent = elapsed + 'ms';
+    jsonOut.textContent = JSON.stringify(data, null, 2);
+  }
+
+  document.getElementById('btn-verify').textContent = 'Verify token';
+  document.getElementById('btn-verify').disabled = false;
+}
+
+function doReset() {
+  token = '';
+  document.getElementById('btn-verify').disabled = true;
+  document.getElementById('hint').textContent = 'Complete the captcha above, then click Verify';
+  document.getElementById('hint').style.color = '';
+  document.getElementById('output').classList.remove('show');
+  if (widgetId !== null && typeof hcaptcha !== 'undefined') {
+    hcaptcha.reset(widgetId);
+  }
+}
+
+window.addEventListener('load', () => {
+  if (typeof hcaptcha !== 'undefined') initWidget();
+  else {
+    const t = setInterval(() => {
+      if (typeof hcaptcha !== 'undefined') { clearInterval(t); initWidget(); }
+    }, 400);
+  }
+});
+</script>
+</body>
+</html>

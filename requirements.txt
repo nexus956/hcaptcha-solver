@@ -1,0 +1,11 @@
+playwright==1.44.0
+pytest==8.2.2
+pytest-asyncio==0.23.7
+requests==2.32.3
+python-dotenv==1.0.1
+# AI solver dependencies
+aiohttp>=3.9.0
+Pillow>=10.0.0
+# REST API server
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0

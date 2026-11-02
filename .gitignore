@@ -1,0 +1,28 @@
+# Environment variables & secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+ENV/
+
+# Pytest & caches
+.pytest_cache/
+
+# Test reports with tokens
+reports/*.json
+!reports/.gitkeep
+
+# Operating System & IDEs
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
