@@ -1,4 +1,4 @@
-# hCaptcha Testing & Evaluation Tool
+# Hcaptcha-solver
 
 An automated testing and QA evaluation tool for hCaptcha challenges built with **Playwright** and **Google Gemini Flash Vision** (`gemini-3.5-flash-lite`).
 
